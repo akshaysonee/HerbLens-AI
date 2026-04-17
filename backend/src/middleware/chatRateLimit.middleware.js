@@ -6,7 +6,7 @@ export const chatRateLimiter = rateLimit({
   max: 15, // 15 requests per minute per IP
   standardHeaders: true,
   legacyHeaders: false,
-  handler: () => {
-    throw new ApiError(429, "Too many chat requests. Please slow down.");
+  handler: (req, res, next) => {
+    next(new ApiError(429, "Too many chat requests. Please slow down."));
   },
 });

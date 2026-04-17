@@ -7,6 +7,7 @@ export const validate = (schema) => (req, res, next) => {
     });
 
     req.validated = data;
+    req.body = data.body ?? req.body;
     next();
   } catch (err) {
     if (err.issues && err.issues.length > 0) {

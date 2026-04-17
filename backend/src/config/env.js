@@ -20,7 +20,7 @@ export const env = {
 
   MONGODB_URI: requireEnv("MONGODB_URI"),
   JWT_ACCESS_TOKEN_SECRET: requireEnv("JWT_ACCESS_TOKEN_SECRET"),
-  CLIENT_URL: requireEnv("CLIENT_URL"),
+  ALLOWED_ORIGINS: requireEnv("ALLOWED_ORIGINS"),
 
   JWT_ACCESS_TOKEN_EXPIRES_IN: process.env.JWT_ACCESS_TOKEN_EXPIRES_IN || "15m",
 

@@ -17,7 +17,7 @@ app.use(helmet());
 
 app.use(
   cors({
-    origin: env.CLIENT_URL ? env.CLIENT_URL.split(",") : false,
+    origin: env.ALLOWED_ORIGINS ? env.ALLOWED_ORIGINS.split(",") : false,
     credentials: true,
   }),
 );
@@ -37,4 +37,3 @@ app.use('/api/chat', chatRouter);
 app.use(errorHandler);
 
 export default app;
-

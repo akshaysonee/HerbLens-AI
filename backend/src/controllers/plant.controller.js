@@ -1,4 +1,5 @@
-import { identifyPlantWithPlantNet } from "../services/plantnet.service.js";
+import { ApiError } from "../utils/ApiError.js";
+import { identifyPlant as identifyPlantService } from "../services/plant.service.js";
 
 export async function identifyPlant(req, res, next) {
   try {
@@ -6,19 +7,14 @@ export async function identifyPlant(req, res, next) {
       throw new ApiError(400, "Image required");
     }
 
-    const plantnet = await identifyPlantWithPlantNet(req.file.buffer);
+    const result = await identifyPlantService({
+      file: req.file,
+      body: req.body,
+    });
 
     return res.json({
       success: true,
-      data: {
-        commonName: plantnet.commonName,
-        plantName: plantnet.scientificName,
-        confidence: plantnet.confidence,
-        family: plantnet.family,
-        genus: plantnet.genus,
-        observationOrgan: plantnet.observationOrgan,
-        wikipediaUrl: plantnet.wikipediaUrl,
-      },
+      data: result,
     });
   } catch (err) {
     next(err);

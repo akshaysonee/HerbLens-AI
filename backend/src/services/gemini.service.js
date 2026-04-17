@@ -17,34 +17,21 @@ export async function askGeminiHerbAssistant({
   }
 
   // ================= SAFE SYSTEM PROMPT =================
-  const systemPrompt = `
+  const isFirstMessage = history.length === 0;
+
+  const systemPrompt = isFirstMessage
+    ? `
 You are an expert herbal knowledge assistant.
 
 The herb has already been identified using AI.
 
 Plant Information:
-
 Scientific Name: ${herbName}
 Common Name: ${herbDetails?.commonName || "Unknown"}
 Family: ${herbDetails?.family || "Unknown"}
 Genus: ${herbDetails?.genus || "Unknown"}
 
-Instructions:
-
-Do NOT start responses with phrases like:
-"Here is information about the herb".
-
-IMPORTANT RULES:
-- If the user asks a follow-up question, answer ONLY that specific question.
-- Do NOT repeat the full herb information again.
-- Keep responses short and relevant.
-- Use bullet points when listing benefits or properties.
-
-Start directly with the section titles.
-
-You MUST return ALL sections even if information is brief.
-
-Use this format exactly.
+You MUST return ALL sections below. Use this format exactly.
 
 Description:
 (1 sentence only)
@@ -81,6 +68,20 @@ Rules:
 - Keep bullet points short
 - Max 4 bullet points per section
 - Avoid long explanations
+`
+    : `
+You are an expert herbal knowledge assistant.
+
+The herb being discussed is:
+Scientific Name: ${herbName}
+Common Name: ${herbDetails?.commonName || "Unknown"}
+
+IMPORTANT RULES:
+- Answer ONLY the specific question asked.
+- Do NOT repeat the full herb information.
+- Do NOT use section headers unless directly relevant.
+- Keep your response short and to the point.
+- Use bullet points only when listing multiple items.
 `;
 
   // ================= SAFE CONTENT STRUCTURE =================
@@ -122,7 +123,7 @@ Rules:
       signal: controller.signal,
     });
 
-
+    clearTimeout(timeout);
   } catch (error) {
     clearTimeout(timeout);
 
@@ -132,8 +133,6 @@ Rules:
 
     throw new ApiError(502, "Unable to connect to AI service.");
   }
-
-  clearTimeout(timeout);
 
   // ================= STATUS HANDLING =================
   if (!res.ok) {

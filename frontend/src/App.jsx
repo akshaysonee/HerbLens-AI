@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth.js";
 import HomePage from "./pages/HomePage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
+import ChangePasswordPage from "./pages/ChangePasswordPage.jsx";
 import AuthLayout from "./layouts/AuthLayout.jsx";
 import ProtectedRoute from "./router/ProtectedRoute.jsx";
 
@@ -24,7 +25,16 @@ function App() {
         path="/dashboard"
         element={
           <ProtectedRoute>
-              <DashboardPage />
+            <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/change-password"
+        element={
+          <ProtectedRoute>
+            <ChangePasswordPage />
           </ProtectedRoute>
         }
       />

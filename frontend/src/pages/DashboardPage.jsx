@@ -223,7 +223,13 @@ function DashboardPage() {
             question: "Provide full herb information with all sections.",
           });
 
-          setHerbDescription(aiResponse?.response || "");
+          const description = aiResponse?.response || "";
+          setHerbDescription(description);
+
+          // Populate the cache so re-uploads of the same plant skip the API call
+          if (description && plantKey) {
+            setAiCache((prev) => ({ ...prev, [plantKey]: description }));
+          }
         } catch {
           setHerbDescription("");
         }

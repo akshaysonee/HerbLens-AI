@@ -44,5 +44,6 @@ export async function identifyPlant({ file, body }) {
     family: plantnetResult.family,
     genus: plantnetResult.genus,
     observationOrgan: plantnetResult.observationOrgan,
+    wikipediaUrl: plantnetResult.wikipediaUrl,
   };
 }

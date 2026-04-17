@@ -47,7 +47,7 @@ function AuthCard({ onOpenForgot }) {
       }
 
       login(res.data.data);
-      
+
       navigate("/dashboard", { replace: true });
     } catch (err) {
       setError(err?.response?.data?.message || "Something went wrong");
@@ -56,10 +56,8 @@ function AuthCard({ onOpenForgot }) {
     }
   };
 
-
   return (
     <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg max-h-[90vh] overflow-y-auto">
-      
       {/* Tabs */}
       <div className="mb-5 flex gap-2 rounded-full bg-slate-100 p-1 text-sm">
         <button

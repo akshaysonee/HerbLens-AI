@@ -22,10 +22,21 @@ authRouter.post(
 
 authRouter.post(
   "/login",
-  loginRateLimiter, validate(loginSchema),
+  loginRateLimiter,
+  validate(loginSchema),
   authController.login,
 );
 
 authRouter.get("/me", authMiddleware, authController.getMe);
-authRouter.put("/me", authMiddleware, validate(updateProfileSchema),authController.updateProfile,);
-authRouter.put("/me/password", authMiddleware, validate(changePasswordSchema), authController.changePassword,);
+authRouter.put(
+  "/me",
+  authMiddleware,
+  validate(updateProfileSchema),
+  authController.updateProfile,
+);
+authRouter.put(
+  "/me/password",
+  authMiddleware,
+  validate(changePasswordSchema),
+  authController.changePassword,
+);

@@ -32,14 +32,10 @@ apiClient.interceptors.response.use(
       clearStoredToken();
 
       // Prevent redirect loop
-      if (!window.location.pathname.includes("/login")) {
-        window.location.href = "/login";
+      if (window.location.pathname !== "/") {
+        window.location.href = "/";
       }
     }
-    
-    // if (!error.response) {
-    //   console.error("Network error or server unavailable");
-    // }
 
     if (!error.response) {
       console.error("Server not reachable or request timeout");
