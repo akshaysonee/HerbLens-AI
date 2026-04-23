@@ -13,13 +13,16 @@ export const chatSchema = z.object({
 
   herbDetails: z.any().optional(),
 
+  activeModel: z.enum(["gemini", "groq"]).nullable().optional(),
+
   history: z
     .array(
       z.object({
         role: z.enum(["user", "assistant"]),
-        content: z.string().max(1000),
+        content: z.string().max(8000),
       }),
     )
     .max(20)
     .optional(),
 });
+ 

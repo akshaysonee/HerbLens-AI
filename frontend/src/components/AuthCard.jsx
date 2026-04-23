@@ -3,8 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../hooks/useAuth.js";
 import apiClient from "../services/apiClient.js";
-import { useLocation } from "react-router-dom";
-import { useEffect, useRef } from "react";
 
 const initialLoginState = { email: "", password: "" };
 const initialRegisterState = { name: "", email: "", password: "" };

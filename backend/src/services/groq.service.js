@@ -2,21 +2,21 @@ import fetch from "node-fetch";
 import { env } from "../config/env.js";
 import { ApiError } from "../utils/ApiError.js";
 
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent?key=${env.GEMINI_API_KEY}`;
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 const AI_TIMEOUT_MS = 15000; // 15 seconds max
 
-export async function askGeminiHerbAssistant({
+export async function askGroqHerbAssistant({
   herbName,
   herbDetails,
   history = [],
   question,
 }) {
-  if (!env.GEMINI_API_KEY) {
-    throw new ApiError(500, "AI service not configured");
+  if (!env.GROQ_API_KEY) {
+    throw new ApiError(500, "Groq AI service not configured");
   }
 
-  // ================= SAFE SYSTEM PROMPT =================
+  // ================= SAME SYSTEM PROMPT AS GEMINI =================
   const isFirstMessage = history.length === 0;
 
   const systemPrompt = isFirstMessage
@@ -86,41 +86,34 @@ IMPORTANT RULES:
 - Never answer questions about technology, sports, politics, entertainment, or any non-herb topic.
 `;
 
-  // ================= SAFE CONTENT STRUCTURE =================
-  const contents = [
-    {
-      role: "user",
-      parts: [{ text: systemPrompt }],
-    },
+  // ================= GROQ USES OPENAI MESSAGE FORMAT =================
+  const messages = [
+    { role: "system", content: systemPrompt },
     ...history.map((h) => ({
-      role: h.role === "assistant" ? "model" : "user",
-      parts: [{ text: h.content }],
+      role: h.role === "assistant" ? "assistant" : "user",
+      content: h.content,
     })),
-    {
-      role: "user",
-      parts: [{ text: question }],
-    },
+    { role: "user", content: question },
   ];
 
-  // ================= FETCH =================
+  // ================= TIMEOUT CONTROLLER =================
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
 
   let res;
 
   try {
-    res = await fetch(GEMINI_URL, {
+    res = await fetch(GROQ_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${env.GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        contents,
-        generationConfig: {
-          temperature: 0.4,
-          topP: 0.9,
-          maxOutputTokens: 1200,
-        },
+        model: env.GROQ_MODEL,
+        messages,
+        temperature: 0.4,
+        max_tokens: 1200,
       }),
       signal: controller.signal,
     });
@@ -130,26 +123,32 @@ IMPORTANT RULES:
     clearTimeout(timeout);
 
     if (error.name === "AbortError") {
-      throw new ApiError(504, "AI service timed out.");
+      throw new ApiError(504, "Groq AI service timed out. Please try again.");
     }
 
-    throw new ApiError(502, "Unable to connect to AI service.");
+    throw new ApiError(502, "Unable to connect to Groq AI service.");
   }
 
   // ================= STATUS HANDLING =================
   if (!res.ok) {
     const errorText = await res.text();
-    console.error("Gemini API Error:", res.status, errorText);
+    console.error("Groq API Error:", res.status, errorText);
 
     if (res.status === 429) {
-      throw new ApiError(429, "Gemini rate limit reached.");
+      throw new ApiError(
+        429,
+        "Groq AI request limit reached. Please try again later.",
+      );
     }
 
     if (res.status === 503) {
-      throw new ApiError(503, "Gemini is currently overloaded.");
+      throw new ApiError(
+        503,
+        "Groq AI service is currently busy. Please try again.",
+      );
     }
 
-    throw new ApiError(502, "Gemini service temporarily unavailable.");
+    throw new ApiError(502, "Groq AI service temporarily unavailable.");
   }
 
   let data;
@@ -157,17 +156,13 @@ IMPORTANT RULES:
   try {
     data = await res.json();
   } catch {
-    throw new ApiError(502, "Invalid response from AI service.");
+    throw new ApiError(502, "Invalid response from Groq AI service.");
   }
 
-  const text =
-    data?.candidates?.[0]?.content?.parts
-      ?.map((p) => p.text || "")
-      .join("\n")
-      .trim() || null;
+  const text = data?.choices?.[0]?.message?.content?.trim() || null;
 
   if (!text) {
-    throw new ApiError(502, "AI did not generate a valid response.");
+    throw new ApiError(502, "Groq AI did not generate a valid response.");
   }
 
   return text;

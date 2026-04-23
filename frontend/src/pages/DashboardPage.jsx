@@ -62,6 +62,7 @@ function DashboardPage() {
 
   const [herbDescription, setHerbDescription] = useState("");
   const [aiCache, setAiCache] = useState({});
+  const [activeModel, setActiveModel] = useState(null);
 
   const icons = {
     Description: BookOpenText,
@@ -197,6 +198,7 @@ function DashboardPage() {
     setIdentifyError("");
     setHerbResult(null);
     setMessages([]);
+    setActiveModel(null); // reset — Gemini will be tried first again
 
     try {
       const result = await identifyPlant(file);
@@ -221,10 +223,16 @@ function DashboardPage() {
               wikipediaUrl: result?.wikipediaUrl,
             },
             question: "Provide full herb information with all sections.",
+            activeModel,
           });
 
           const description = aiResponse?.response || "";
           setHerbDescription(description);
+
+          // Track which model responded
+          if (aiResponse?.usedModel) {
+            setActiveModel(aiResponse.usedModel);
+          }
 
           // Populate the cache so re-uploads of the same plant skip the API call
           if (description && plantKey) {
@@ -264,6 +272,7 @@ function DashboardPage() {
     setIdentifyError("");
     setChatError("");
     setHerbDescription("");
+    setActiveModel(null); // reset — Gemini will be tried first on next image
 
     // 🔥 Clear file inputs properly
     if (galleryInputRef.current) {
@@ -313,7 +322,13 @@ function DashboardPage() {
           content: m.content,
         })),
         question,
+        activeModel,
       });
+
+      // Track which model responded — if Gemini failed and Groq took over, stay on Groq
+      if (response?.usedModel) {
+        setActiveModel(response.usedModel);
+      }
 
       const rawText = response?.response || "No response received.";
 
@@ -333,9 +348,21 @@ function DashboardPage() {
           m.id === pendingAssistant.id ? { ...m, content: text } : m,
         ),
       );
-    } catch {
-      setChatError("Failed to send message.");
-      setMessages((prev) => prev.filter((m) => m.id !== pendingAssistant.id));
+    } catch (err) {
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to send message.";
+
+      setMessages((prev) => [
+        ...prev.filter((m) => m.id !== pendingAssistant.id),
+        {
+          id: `${Date.now()}-error`,
+          role: "assistant",
+          content: errorMessage,
+          isError: true,
+        },
+      ]);
     } finally {
       setSending(false);
     }
@@ -664,7 +691,9 @@ function DashboardPage() {
                       className={`max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-2 text-sm whitespace-pre-line leading-relaxed ${
                         msg.role === "user"
                           ? "bg-emerald-600 text-white"
-                          : "bg-white text-slate-800 leading-relaxed"
+                          : msg.isError
+                            ? "bg-red-50 text-red-600 border border-red-200"
+                            : "bg-white text-slate-800 leading-relaxed"
                       } ${msg.auto ? "animate-fadeIn" : ""}`}
                     >
                       {msg.content}

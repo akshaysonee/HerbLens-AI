@@ -26,11 +26,14 @@ export const env = {
 
   PLANTNET_API_KEY: process.env.PLANTNET_API_KEY || "",
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || "",
+  GROQ_API_KEY: process.env.GROQ_API_KEY || "",
 
   PLANTNET_API_ENDPOINT:
-    process.env.PLANTNET_API_ENDPOINT || "https://my-api.plantnet.org/v2/identify/all",
+    process.env.PLANTNET_API_ENDPOINT ||
+    "https://my-api.plantnet.org/v2/identify/all",
 
-  GEMINI_MODEL: process.env.GEMINI_MODEL || "gemini-1.5-flash",
+  GEMINI_MODEL: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+  GROQ_MODEL: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
 };
 
 if (env.JWT_ACCESS_TOKEN_SECRET.length < 32) {
