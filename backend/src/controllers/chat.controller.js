@@ -80,8 +80,6 @@ export async function sendMessage(req, res, next) {
       }
     }
 
-    console.log(`Used model: ${usedModel} for question: "${question}"`);
-
     return res.status(200).json({
       success: true,
       data: { response, usedModel },
