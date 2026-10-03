@@ -19,7 +19,7 @@ export async function identifyPlantWithPlantNet(imageBuffer, organs = ["leaf"]) 
 
   const url = `${env.PLANTNET_API_ENDPOINT}?api-key=${env.PLANTNET_API_KEY}`;
 
-  // 🔥 Timeout Controller
+  // Timeout Controller
   const controller = new AbortController();
   const timeout = setTimeout(() => {
     controller.abort();
@@ -38,7 +38,7 @@ export async function identifyPlantWithPlantNet(imageBuffer, organs = ["leaf"]) 
   } catch (error) {
     clearTimeout(timeout);
 
-    // 🔥 Timeout error
+    //  Timeout error
     if (error.name === "AbortError") {
       throw new ApiError(
         504,

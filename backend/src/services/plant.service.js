@@ -20,7 +20,7 @@ export async function identifyPlant({ file, body }) {
           .map((o) => o.trim().toLowerCase())
           .filter(Boolean);
 
-    // 🔥 Strict whitelist validation
+    // Strict whitelist validation
     const invalidOrgans = parsedOrgans.filter(
       (organ) => !ALLOWED_ORGANS.includes(organ),
     );

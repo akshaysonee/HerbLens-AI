@@ -1,48 +1,18 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "./hooks/useAuth.js";
-import HomePage from "./pages/HomePage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
-import ChangePasswordPage from "./pages/ChangePasswordPage.jsx";
-import AuthLayout from "./layouts/AuthLayout.jsx";
-import ProtectedRoute from "./router/ProtectedRoute.jsx";
 
 function App() {
-  const { isAuthenticated } = useAuth();
-
   return (
     <Routes>
-      <Route
-        path="/"
-        element={
-          <AuthLayout>
-            <HomePage />
-          </AuthLayout>
-        }
-      />
+      {/* Main entry point */}
+      <Route path="/" element={<DashboardPage />} />
 
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        }
-      />
+      {/* Dashboard */}
+      <Route path="/dashboard" element={<DashboardPage />} />
 
-      <Route
-        path="/change-password"
-        element={
-          <ProtectedRoute>
-            <ChangePasswordPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="*"
-        element={<Navigate to={isAuthenticated ? "/dashboard" : "/"} replace />}
-      />
+      {/* Redirect all unknown routes to Dashboard */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

@@ -8,22 +8,23 @@ export function errorHandler(err, req, res, next) {
   let message = "Internal server error";
   let details = null;
 
-  // ✅ Custom ApiError
+  // Custom ApiError
   if (err instanceof ApiError) {
     statusCode = err.statusCode;
     message = err.message;
     details = err.details || null;
   }
 
-  // ✅ Zod validation error
+  // Zod validation error
   else if (err.issues) {
     statusCode = 400;
     message = err.issues[0]?.message || "Validation error";
   }
 
-  // ✅ Multer file errors
+  // Multer file errors
   else if (err instanceof multer.MulterError) {
     statusCode = 400;
+
     if (err.code === "LIMIT_FILE_SIZE") {
       message = "File too large. Maximum size is 10MB.";
     } else {
@@ -31,23 +32,7 @@ export function errorHandler(err, req, res, next) {
     }
   }
 
-  // ✅ JWT errors
-  else if (err.name === "JsonWebTokenError") {
-    statusCode = 401;
-    message = "Invalid authentication token";
-  } else if (err.name === "TokenExpiredError") {
-    statusCode = 401;
-    message = "Authentication token expired";
-  }
-
-  // ✅ Mongo duplicate key error
-  else if (err.code === 11000) {
-    statusCode = 409;
-    const field = Object.keys(err.keyValue)[0];
-    message = `${field} already exists`;
-  }
-
-  // ✅ Rate limit errors (if thrown manually)
+  // Rate limit errors
   else if (err.status === 429) {
     statusCode = 429;
     message = err.message || "Too many requests";

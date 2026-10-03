@@ -1,15 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { identifyPlant } from "../services/recognitionService.js";
 import { sendChatMessage } from "../services/chatService.js";
-import { useAuth } from "../hooks/useAuth.js";
 import logo from "../assets/logo.svg";
 
 import {
-  LogOut,
-  Lock,
-  Info,
-  HelpCircle,
   ImagePlus,
   Camera,
   ArrowUp,
@@ -22,24 +16,16 @@ import {
   AlertTriangle,
   BookOpenText,
 } from "lucide-react";
-import Modal from "../components/Modal.jsx";
-import AboutContent from "../components/AboutContent.jsx";
-import ContactContent from "../components/ContactContent.jsx";
 
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 
 function DashboardPage() {
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
-
   const bottomRef = useRef(null);
-  const dropdownRef = useRef(null);
   const uploadModalRef = useRef(null);
   const galleryInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
-  const [profileOpen, setProfileOpen] = useState(false);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [dragActive, setDragActive] = useState(false);
 
@@ -53,14 +39,8 @@ function DashboardPage() {
   const [chatError, setChatError] = useState("");
   const [sending, setSending] = useState(false);
 
-  const userInitial = user?.name?.[0]?.toUpperCase() || "";
-
-  const firstName = user?.name?.trim().split(" ")[0] || "User";
-
   const [assistantTyping, setAssistantTyping] = useState(false);
 
-  const [aboutOpen, setAboutOpen] = useState(false);
-  const [contactOpen, setContactOpen] = useState(false);
 
   const [herbDescription, setHerbDescription] = useState("");
   const [aiCache, setAiCache] = useState({});
@@ -91,16 +71,6 @@ function DashboardPage() {
     return "Good Evening 🌙";
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
-
-  useEffect(() => {
-    if (aboutOpen || contactOpen) {
-      setProfileOpen(false);
-    }
-  }, [aboutOpen, contactOpen]);
 
   /* ================= AUTO SCROLL ================= */
   useEffect(() => {
@@ -127,7 +97,7 @@ function DashboardPage() {
         const autoMessage = {
           id: `auto-${Date.now()}`,
           role: "assistant",
-          content: `Hi ${firstName}, ask me anything about ${herbName}.`,
+          content: `Hi 👋, ask me anything about ${herbName}.`,
           auto: true,
         };
 
@@ -137,19 +107,8 @@ function DashboardPage() {
 
       return () => clearTimeout(timer);
     }
-  }, [herbResult, firstName]);
+  }, [herbResult]);
 
-  /* ================= PROFILE DROPDOWN ================= */
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setProfileOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   /* ================= UPLOAD MODAL LOGIC ================= */
   useEffect(() => {
@@ -198,6 +157,7 @@ function DashboardPage() {
   /* ================= IMAGE HANDLING ================= */
   const handleImageChange = async (event) => {
     const file = event.target.files?.[0];
+
     if (!file) return;
 
     if (identifying) return;
@@ -217,7 +177,7 @@ function DashboardPage() {
     setIdentifyError("");
     setHerbResult(null);
     setMessages([]);
-    setActiveModel(null); // reset — Gemini will be tried first again
+    setActiveModel(null);
 
     try {
       const result = await identifyPlant(file);
@@ -229,7 +189,7 @@ function DashboardPage() {
       if (aiCache[plantKey]) {
         setHerbDescription(aiCache[plantKey]);
       } else {
-        // Step 2: Generate AI description once
+        /* ================= AI DESCRIPTION ================= */
         try {
           const aiResponse = await sendChatMessage({
             herbName: result?.plantName,
@@ -246,16 +206,18 @@ function DashboardPage() {
           });
 
           const description = aiResponse?.response || "";
+
           setHerbDescription(description);
 
-          // Track which model responded
           if (aiResponse?.usedModel) {
             setActiveModel(aiResponse.usedModel);
           }
 
-          // Populate the cache so re-uploads of the same plant skip the API call
           if (description && plantKey) {
-            setAiCache((prev) => ({ ...prev, [plantKey]: description }));
+            setAiCache((prev) => ({
+              ...prev,
+              [plantKey]: description,
+            }));
           }
         } catch {
           setHerbDescription("");
@@ -264,7 +226,7 @@ function DashboardPage() {
     } catch (err) {
       setIdentifyError(
         err?.response?.data?.message ||
-          "Invalid image detected. Please upload a clear plant image.",
+          "Invalid image detected. Please upload a clear plant image."
       );
     } finally {
       setIdentifying(false);
@@ -276,9 +238,15 @@ function DashboardPage() {
     setDragActive(false);
 
     const file = event.dataTransfer.files?.[0];
+
     if (!file) return;
 
-    const fakeEvent = { target: { files: [file] } };
+    const fakeEvent = {
+      target: {
+        files: [file],
+      },
+    };
+
     handleImageChange(fakeEvent);
   };
 
@@ -290,12 +258,12 @@ function DashboardPage() {
     setIdentifyError("");
     setChatError("");
     setHerbDescription("");
-    setActiveModel(null); // reset — Gemini will be tried first on next image
+    setActiveModel(null);
 
-    // 🔥 Clear file inputs properly
     if (galleryInputRef.current) {
       galleryInputRef.current.value = "";
     }
+
     if (cameraInputRef.current) {
       cameraInputRef.current.value = "";
     }
@@ -306,6 +274,7 @@ function DashboardPage() {
     if (!chatInput.trim() || sending) return;
 
     const question = chatInput.trim();
+
     setChatInput("");
     setChatError("");
 
@@ -321,7 +290,12 @@ function DashboardPage() {
       content: "Thinking…",
     };
 
-    setMessages((prev) => [...prev, userMessage, pendingAssistant]);
+    setMessages((prev) => [
+      ...prev,
+      userMessage,
+      pendingAssistant,
+    ]);
+
     setSending(true);
 
     try {
@@ -335,7 +309,7 @@ function DashboardPage() {
           confidence: herbResult?.confidence,
           wikipediaUrl: herbResult?.wikipediaUrl,
         },
-        history: messages.map((m) => ({
+        history: messages.slice(-6).map((m) => ({
           role: m.role,
           content: m.content,
         })),
@@ -343,28 +317,33 @@ function DashboardPage() {
         activeModel,
       });
 
-      // Track which model responded — if Gemini failed and Groq took over, stay on Groq
       if (response?.usedModel) {
         setActiveModel(response.usedModel);
       }
 
-      const rawText = response?.response || "No response received.";
+      const rawText =
+        response?.response || "No response received.";
 
       const text = rawText
-        .replace(/\*\s/g, "\n• ") // convert * bullets
-        .replace(/•/g, "\n• ") // normalize bullets
-        .replace(/\n{2,}/g, "\n") // remove extra blank lines
-        .replace(/\n•\s*\n/g, "\n") // remove empty bullet
+        .replace(/\*\s/g, "\n• ")
+        .replace(/•/g, "\n• ")
+        .replace(/\n{2,}/g, "\n")
+        .replace(/\n•\s*\n/g, "\n")
         .replace(
           /(Description|Native Region|Traditional Uses|Medicinal Properties|Health Benefits|Usage Instructions|Precautions \/ Side Effects|Safety Warnings):/g,
-          "\n\n$1:",
-        ) // break sections properly
+          "\n\n$1:"
+        )
         .trim();
 
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === pendingAssistant.id ? { ...m, content: text } : m,
-        ),
+          m.id === pendingAssistant.id
+            ? {
+                ...m,
+                content: text,
+              }
+            : m
+        )
       );
     } catch (err) {
       const errorMessage =
@@ -373,7 +352,9 @@ function DashboardPage() {
         "Failed to send message.";
 
       setMessages((prev) => [
-        ...prev.filter((m) => m.id !== pendingAssistant.id),
+        ...prev.filter(
+          (m) => m.id !== pendingAssistant.id
+        ),
         {
           id: `${Date.now()}-error`,
           role: "assistant",
@@ -388,109 +369,56 @@ function DashboardPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f4fbf9]">
+
       {/* ================= HEADER ================= */}
-      <header className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-200 bg-[#f4fbf9]">
+      <header className="sticky top-0 z-50 flex items-center px-4 sm:px-6 py-3 border-b border-slate-200 bg-[#f4fbf9]">
+
         <div className="flex items-center gap-3">
-          <img src={logo} alt="Logo" className="h-8" />
+          <img
+            src={logo}
+            alt="Logo"
+            className="h-8"
+          />
+
           <span className="text-lg font-semibold">
-            HerbLens <span className="text-emerald-600">AI</span>
+            HerbLens{" "}
+            <span className="text-emerald-600">
+              AI
+            </span>
           </span>
         </div>
 
-        <div className="relative" ref={dropdownRef}>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setProfileOpen((prev) => !prev);
-            }}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-white font-semibold"
-          >
-            {userInitial}
-          </button>
-
-          {profileOpen && (
-            <div className="absolute right-0 mt-4 w-60 rounded-2xl border border-slate-200 bg-white shadow-xl p-3 z-50 animate-dropdown">
-              <div className="absolute -top-2 right-4 h-4 w-4 rotate-45 bg-white border-l border-t border-slate-200" />
-
-              <div className="flex items-center gap-3 px-3 py-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-white font-semibold">
-                  {userInitial}
-                </div>
-                <div>
-                  <div className="text-sm font-semibold">{user?.name}</div>
-                  <div className="text-xs text-slate-500">{user?.email}</div>
-                </div>
-              </div>
-
-              <div className="my-2 border-t" />
-
-              <button
-                onClick={() => navigate("/change-password")}
-                className="flex items-center gap-3 px-3 py-2 hover:bg-slate-100 rounded-lg"
-              >
-                <Lock size={16} /> Change Password
-              </button>
-
-              <button
-                onClick={() => {
-                  setProfileOpen(false);
-                  setTimeout(() => {
-                    setAboutOpen(true);
-                  }, 50);
-                }}
-                className="flex items-center gap-3 px-3 py-2 hover:bg-slate-100 rounded-lg"
-              >
-                <Info size={16} /> About
-              </button>
-
-              <button
-                onClick={() => {
-                  setProfileOpen(false);
-                  setTimeout(() => {
-                    setContactOpen(true);
-                  }, 50);
-                }}
-                className="flex items-center gap-3 px-3 py-2 hover:bg-slate-100 rounded-lg"
-              >
-                <HelpCircle size={16} /> Contact
-              </button>
-
-              <div className="my-2 border-t" />
-
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-3 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
-              >
-                <LogOut size={16} /> Logout
-              </button>
-            </div>
-          )}
-        </div>
       </header>
 
       {/* ================= MAIN ================= */}
       <main
         className={`flex-1 px-4 sm:px-6 py-10 pb-32 ${
-          !herbResult && !identifying ? "flex items-center justify-center" : ""
+          !herbResult && !identifying
+            ? "flex items-center justify-center"
+            : ""
         }`}
       >
         <div className="mx-auto w-full max-w-5xl">
+
           {/* Greeting Section */}
           {!herbResult && !identifying && (
             <div className="mb-12 text-center">
+
               <h1 className="greeting-font text-4xl sm:text-5xl font-medium tracking-tight text-slate-800">
-                {getGreeting()}, {firstName}
+                {getGreeting()}
               </h1>
+
               <p className="mt-4 text-slate-500 text-lg">
-                Ready to explore a new herb today?
+                Ready to identify and explore a new herb today?
               </p>
+
             </div>
           )}
 
           {/* INITIAL UPLOAD STATE */}
           {!herbResult && !identifying && (
             <div className="space-y-6">
-              {/*ERROR DISPLAY*/}
+
               {identifyError && (
                 <div className="mx-auto w-full max-w-md sm:max-w-lg lg:max-w-3xl xl:max-w-4xl rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 text-center">
                   {identifyError}
@@ -514,10 +442,15 @@ function DashboardPage() {
                     : "border-slate-300 bg-white hover:border-emerald-400 hover:bg-emerald-50/40"
                 }`}
               >
-                <ImagePlus size={28} className="mb-3 text-emerald-600" />
+                <ImagePlus
+                  size={28}
+                  className="mb-3 text-emerald-600"
+                />
+
                 <span className="font-medium text-slate-700">
                   Upload or Capture Herb Image
                 </span>
+
                 <span className="text-xs text-slate-500">
                   Drag & drop or click to upload
                 </span>
@@ -528,19 +461,28 @@ function DashboardPage() {
           {/* LOADING STATE */}
           {identifying && (
             <div className="flex flex-col items-center gap-4 mt-10">
+
               <div className="h-10 w-10 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin" />
-              <p className="text-slate-500 text-sm">Identifying herb...</p>
+
+              <p className="text-slate-500 text-sm">
+                Identifying herb...
+              </p>
+
             </div>
           )}
 
           {/* RESULT STATE */}
           {herbResult && !identifying && (
             <div className="w-full space-y-8">
+
               {/* ================= RESULT CARD ================= */}
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+
                 <div className="flex gap-4">
+
                   {/* Image Preview */}
                   <div className="h-20 w-20 overflow-hidden rounded-xl bg-emerald-50">
+
                     {imagePreview && (
                       <img
                         src={imagePreview}
@@ -548,50 +490,68 @@ function DashboardPage() {
                         className="h-full w-full object-cover"
                       />
                     )}
+
                   </div>
 
                   {/* Herb Info */}
                   <div className="flex-1">
+
                     {/* Name */}
                     <div className="flex items-center gap-3 flex-wrap">
+
                       <div className="sm:text-base md:text-lg font-semibold text-slate-900">
                         {herbResult?.commonName ||
                           herbResult?.plantName ||
                           "Unknown Herb"}
                       </div>
+
                     </div>
 
-                    {/* Scientific Name + Details */}
+                    {/* Scientific Name */}
                     <div className="text-xs md:text-sm text-slate-500 italic mt-1">
-                      <span className="font-small">Scientific Name:</span>{" "}
+
+                      <span className="font-small">
+                        Scientific Name:
+                      </span>{" "}
+
                       {herbResult?.plantName}
+
                     </div>
 
-                    <div className="text-xs md:text-sm text-slate-500 italic ">
+                    <div className="text-xs md:text-sm text-slate-500 italic">
+
                       {herbResult?.family && (
                         <div>
-                          <span className="font-small">Family:</span>{" "}
+                          <span className="font-small">
+                            Family:
+                          </span>{" "}
                           {herbResult.family}
                         </div>
                       )}
 
                       {herbResult?.genus && (
                         <div>
-                          <span className="font-small">Genus:</span>{" "}
+                          <span className="font-small">
+                            Genus:
+                          </span>{" "}
                           {herbResult.genus}
                         </div>
                       )}
 
                       {herbResult?.observationOrgan && (
                         <div>
-                          <span className="font-small">Observed Organ:</span>{" "}
+                          <span className="font-small">
+                            Observed Organ:
+                          </span>{" "}
                           {herbResult.observationOrgan}
                         </div>
                       )}
+
                     </div>
 
                     {/* Confidence Badge */}
                     <div className="mt-1">
+
                       {herbResult?.confidence && (
                         <span
                           className={`px-3 py-1 text-xs font-medium rounded-full ${
@@ -602,15 +562,22 @@ function DashboardPage() {
                                 : "bg-red-100 text-red-700"
                           }`}
                         >
-                          Confidence: {Math.round(herbResult.confidence * 100)}%
+                          Confidence:{" "}
+                          {Math.round(
+                            herbResult.confidence * 100
+                          )}
+                          %
                         </span>
                       )}
+
                     </div>
 
                     {/* Wikipedia Url */}
-                    <div className="text-xs md:text-sm text-slate-500 italic ">
+                    <div className="text-xs md:text-sm text-slate-500 italic">
+
                       {herbResult?.wikipediaUrl && (
                         <div className="mt-2">
+
                           <a
                             href={herbResult.wikipediaUrl}
                             target="_blank"
@@ -620,17 +587,24 @@ function DashboardPage() {
                             <Link size={13} />
                             View on Wikipedia
                           </a>
+
                         </div>
                       )}
+
                     </div>
+
                   </div>
                 </div>
 
                 {/* Description */}
                 <div className="mt-6 space-y-6">
+
                   {sections.map((section, index) => {
+
                     const lines =
-                      typeof section === "string" ? section.split("\n") : [];
+                      typeof section === "string"
+                        ? section.split("\n")
+                        : [];
 
                     const title = (lines[0] || "")
                       .replace(/^#+\s*/, "")
@@ -642,25 +616,33 @@ function DashboardPage() {
                       .filter(Boolean)
                       .map((p) =>
                         p
-                          .replace(/^[-*•]\s*/, "") // remove bullet
-                          .replace(/\*\*/g, "") // remove bold **
-                          .replace(/\*/g, "") // remove italic *
-                          .trim(),
+                          .replace(/^[-*•]\s*/, "")
+                          .replace(/\*\*/g, "")
+                          .replace(/\*/g, "")
+                          .trim()
                       );
 
-                    const Icon = icons[title] || Leaf;
+                    const Icon =
+                      icons[title] || Leaf;
 
                     return (
                       <div
                         key={index}
                         className="border-t border-slate-200 pt-4"
                       >
+
                         {/* Section Header */}
                         <div className="flex items-center gap-2 mb-2">
-                          <Icon size={18} className="text-emerald-600" />
+
+                          <Icon
+                            size={18}
+                            className="text-emerald-600"
+                          />
+
                           <h3 className="text-sm font-semibold text-slate-900">
                             {title}
                           </h3>
+
                         </div>
 
                         {/* Description */}
@@ -670,23 +652,31 @@ function DashboardPage() {
                           </p>
                         ) : (
                           <ul className="list-disc pl-5 space-y-1 text-sm text-slate-600">
+
                             {points.map((point, i) => (
-                              <li key={i}>{point.trim()}</li>
+                              <li key={i}>
+                                {point.trim()}
+                              </li>
                             ))}
+
                           </ul>
                         )}
+
                       </div>
                     );
                   })}
+
                 </div>
 
-                {/* 🔥 Low Confidence Warning */}
-                {herbResult?.confidence && herbResult.confidence < 0.5 && (
-                  <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                    ⚠️ Detection confidence is low. Please upload a clearer herb
-                    image for better accuracy.
-                  </div>
-                )}
+                {/* Low Confidence Warning */}
+                {herbResult?.confidence &&
+                  herbResult.confidence < 0.5 && (
+                    <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                      ⚠️ Detection confidence is low. Please
+                      upload a clearer herb image for better
+                      accuracy.
+                    </div>
+                  )}
 
                 <button
                   onClick={resetDashboard}
@@ -694,17 +684,22 @@ function DashboardPage() {
                 >
                   Upload Another Herb Image
                 </button>
+
               </div>
 
               {/* ================= CHAT SECTION ================= */}
               <div className="space-y-3">
+
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
                     className={`flex ${
-                      msg.role === "user" ? "justify-end" : "justify-start"
+                      msg.role === "user"
+                        ? "justify-end"
+                        : "justify-start"
                     }`}
                   >
+
                     <div
                       className={`max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-2 text-sm whitespace-pre-line leading-relaxed ${
                         msg.role === "user"
@@ -712,47 +707,73 @@ function DashboardPage() {
                           : msg.isError
                             ? "bg-red-50 text-red-600 border border-red-200"
                             : "bg-white text-slate-800 leading-relaxed"
-                      } ${msg.auto ? "animate-fadeIn" : ""}`}
+                      } ${
+                        msg.auto
+                          ? "animate-fadeIn"
+                          : ""
+                      }`}
                     >
                       {msg.content}
                     </div>
+
                   </div>
                 ))}
 
                 {chatError && (
-                  <p className="text-sm text-red-600">{chatError}</p>
+                  <p className="text-sm text-red-600">
+                    {chatError}
+                  </p>
                 )}
 
                 {assistantTyping && (
                   <div className="flex justify-start">
+
                     <div className="rounded-2xl bg-white border border-slate-200 px-4 py-2 shadow-sm animate-typingBubble">
+
                       <div className="flex items-center gap-1">
+
                         <span className="h-2 w-2 bg-slate-400 rounded-full animate-bounce" />
+
                         <span className="h-2 w-2 bg-slate-400 rounded-full animate-bounce delay-150" />
+
                         <span className="h-2 w-2 bg-slate-400 rounded-full animate-bounce delay-300" />
+
                       </div>
+
                     </div>
                   </div>
                 )}
 
                 <div ref={bottomRef} />
+
               </div>
+
             </div>
           )}
+
         </div>
       </main>
 
+      {/* ================= CHAT INPUT ================= */}
       {herbResult && !identifying && (
         <div className="fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-[#f4fbf9]">
+
           <div className="mx-auto w-full max-w-5xl">
+
             <div className="flex items-center gap-2 rounded-full bg-white border border-slate-200 px-4 py-2 shadow-sm">
+
               <input
                 type="text"
                 placeholder="Ask anything about this herb"
                 value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
+                onChange={(e) =>
+                  setChatInput(e.target.value)
+                }
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !sending) {
+                  if (
+                    e.key === "Enter" &&
+                    !sending
+                  ) {
                     e.preventDefault();
                     handleSendMessage();
                   }
@@ -767,7 +788,9 @@ function DashboardPage() {
               >
                 <ArrowUp size={16} />
               </button>
+
             </div>
+
           </div>
         </div>
       )}
@@ -775,10 +798,12 @@ function DashboardPage() {
       {/* ================= UPLOAD MODAL ================= */}
       {uploadModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+
           <div
             ref={uploadModalRef}
             className="w-80 rounded-2xl bg-white p-6 shadow-2xl animate-modalScale"
           >
+
             <button
               onClick={() => {
                 galleryInputRef.current.click();
@@ -786,7 +811,8 @@ function DashboardPage() {
               }}
               className="flex items-center gap-3 w-full px-4 py-3 rounded-xl border hover:bg-slate-50"
             >
-              <ImagePlus size={18} /> Add Image
+              <ImagePlus size={18} />
+              Add Image
             </button>
 
             <button
@@ -796,12 +822,15 @@ function DashboardPage() {
               }}
               className="flex items-center gap-3 w-full px-4 py-3 rounded-xl border mt-3 hover:bg-slate-50"
             >
-              <Camera size={18} /> Take Photo
+              <Camera size={18} />
+              Take Photo
             </button>
+
           </div>
         </div>
       )}
 
+      {/* ================= FILE INPUTS ================= */}
       <input
         type="file"
         accept="image/*"
@@ -819,15 +848,6 @@ function DashboardPage() {
         onChange={handleImageChange}
       />
 
-      {/* ================= ABOUT MODAL ================= */}
-      <Modal isOpen={aboutOpen} onClose={() => setAboutOpen(false)}>
-        <AboutContent onClose={() => setAboutOpen(false)} />
-      </Modal>
-
-      {/* ================= CONTACT MODAL ================= */}
-      <Modal isOpen={contactOpen} onClose={() => setContactOpen(false)}>
-        <ContactContent onClose={() => setContactOpen(false)} />
-      </Modal>
     </div>
   );
 }

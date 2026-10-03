@@ -1,18 +1,16 @@
 # HerbLens AI
 
-HerbLens AI is a MERN capstone project for medicinal herb identification. Users can register, upload a herb image, receive a PlantNet-based identification result, and ask AI-assisted questions about the identified plant.
+HerbLens AI is a MERN capstone project for medicinal herb identification. Users can upload a herb image, receive a PlantNet-based identification result, and ask AI-assisted questions about the identified plant.
 
 ## Tech Stack
 
 - Frontend: React, Vite, Tailwind CSS
-- Backend: Node.js, Express, MongoDB/Mongoose
+- Backend: Node.js, Express
 - External APIs: PlantNet, Gemini, Groq
-- Auth: JWT bearer access tokens
 
 ## Requirements
 
 - Node.js `>=20.19.0`
-- MongoDB database
 - PlantNet API key
 - Gemini and/or Groq API key
 
@@ -38,7 +36,7 @@ HerbLens AI is a MERN capstone project for medicinal herb identification. Users 
 
 4. Update the env values, especially:
 
-   - `backend/.env`: `MONGODB_URI`, `JWT_ACCESS_TOKEN_SECRET`, `ALLOWED_ORIGINS`, `PLANTNET_API_KEY`, `GEMINI_API_KEY`, `GROQ_API_KEY`
+   - `backend/.env`: `ALLOWED_ORIGINS`, `PLANTNET_API_KEY`, `GEMINI_API_KEY`, `GROQ_API_KEY`
    - `frontend/.env`: `VITE_API_URL`
 
 5. Start both apps:
@@ -79,9 +77,6 @@ Required environment variables:
 ```bash
 PORT=5000
 NODE_ENV=production
-MONGODB_URI=your_mongodb_connection_string
-JWT_ACCESS_TOKEN_SECRET=replace_with_at_least_32_random_characters
-JWT_ACCESS_TOKEN_EXPIRES_IN=1d
 ALLOWED_ORIGINS=https://your-frontend-domain.com
 PLANTNET_API_KEY=your_plantnet_api_key
 PLANTNET_API_ENDPOINT=https://my-api.plantnet.org/v2/identify/all
@@ -123,8 +118,7 @@ Also update backend `ALLOWED_ORIGINS` to include the final frontend URL.
 
 ## Capstone Demo Checklist
 
-- Register a new user.
-- Login with that user.
+- Open the HerbLens AI dashboard.
 - Upload a clear JPG, PNG, or WEBP herb image under 5 MB.
 - Confirm the plant identification result appears.
 - Ask one herb-related question in the chat.
@@ -132,7 +126,6 @@ Also update backend `ALLOWED_ORIGINS` to include the final frontend URL.
 
 ## Known Production Follow-ups
 
-- Add refresh-token rotation with `HttpOnly`, `Secure`, `SameSite` cookies.
-- Add real password reset email flow if password reset is required.
-- Add persistent plant/chat history if users need saved sessions.
-- Add full integration tests with a test MongoDB instance and mocked external APIs.
+- Improve external API reliability and fallback handling.
+- Add persistent plant/chat history if saved sessions are needed.
+- Add full integration tests with mocked external APIs.
